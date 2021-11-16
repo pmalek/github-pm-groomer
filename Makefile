@@ -10,7 +10,3 @@ check:
 .PHONY: test
 test:
 	go test ./...
-
-.PHONY: build
-build:
-	go build -o build/artifacts-${GOOS}-${GOARCH}/github-pm-groomer main.go

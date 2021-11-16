@@ -8,7 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -58,7 +57,6 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 		byName[*l.Name] = l
 	}
 	for _, def := range labelConf.Default.Labels {
-		fmt.Fprintf(os.Stdout, "doing: %v\n", def)
 		cur := byName[def.Name]
 		if def.Delete {
 			if cur != nil {

@@ -17,9 +17,8 @@ type Client interface {
 	UpdateLabels(ctx context.Context, orgRepo string, issue int, labels []string) error
 	UpdateIssueState(ctx context.Context, orgRepo string, issue int, state string) error
 	Ping(ctx context.Context) error
+	Comment(ctx context.Context, repo string, issueNumber int, message string) error
 }
-
-type Issue github.Issue
 
 type githubClient struct {
 	client *github.Client
@@ -94,4 +93,12 @@ func (gc *githubClient) GetIssue(ctx context.Context, orgRepo string, issueNumbe
 		return nil, err
 	}
 	return (*Issue)(issue), nil
+}
+
+func (gc *githubClient) Comment(ctx context.Context, orgRepo string, issueNumber int, message string) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, _, err := gc.client.Issues.CreateComment(ctx, org, repo, issueNumber, &github.IssueComment{
+		Body: &message,
+	})
+	return err
 }

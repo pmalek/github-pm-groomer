@@ -14,19 +14,19 @@ var (
 		Short: "do things to labels",
 		Long: "Add or Remove labels, the will also apply to PRs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := opts.Validate(); err != nil {
+			if err := labelOpts.Validate(); err != nil {
 				return err
 			}
-			return labels.Run(cmd.Context(), ghClient, opts, time.Now())
+			return labels.Run(cmd.Context(), ghClient, labelOpts, time.Now())
 		},
 	}
-	opts labels.LabelOpts
+	labelOpts labels.Opts
 )
 
 func init() {
-	labelsCmd.Flags().StringVarP(&opts.Action, "action","a", "add", fmt.Sprintf("what to do on the issues (%s)", strings.Join(labels.AllOptions, ",")))
-	labelsCmd.Flags().StringVarP(&opts.Label, "label","l", "", "The label to add/remove")
-	decorateWithIssueSelector(labelsCmd, &opts.IssueSelector)
+	labelsCmd.Flags().StringVarP(&labelOpts.Action, "action","a", "add", fmt.Sprintf("what to do on the issues (%s)", strings.Join(labels.AllOptions, ",")))
+	labelsCmd.Flags().StringVarP(&labelOpts.Label, "label","l", "", "The label to add/remove")
+	decorateWithIssueSelector(labelsCmd, &labelOpts.IssueSelector)
 
 	rootCmd.AddCommand(labelsCmd)
 }

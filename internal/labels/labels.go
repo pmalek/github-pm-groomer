@@ -19,13 +19,13 @@ const (
 
 var AllOptions = []string{AddAction, RemoveAction}
 
-type LabelOpts struct {
+type Opts struct {
 	Action        string
 	Label         string
 	IssueSelector issues.Selector
 }
 
-func (l LabelOpts) Validate() error {
+func (l Opts) Validate() error {
 	if l.Action != AddAction && l.Action != RemoveAction {
 		return fmt.Errorf("invalid action type '%s' valid options: %s", l.Action, strings.Join(AllOptions, ","))
 	}
@@ -38,7 +38,7 @@ func (l LabelOpts) Validate() error {
 	return nil
 }
 
-func Run(ctx context.Context, client api.Client, opts LabelOpts, now time.Time) error {
+func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error {
 	if opts.Action == RemoveAction {
 		// We're removing so let's only select issues with the label in the first place
 		strings.Join(append(strings.Split(opts.IssueSelector.Labels, ","), opts.Label), ",")
@@ -55,22 +55,9 @@ func Run(ctx context.Context, client api.Client, opts LabelOpts, now time.Time) 
 		var newLabels []string
 		switch opts.Action {
 		case RemoveAction:
-			for _, v := range issue.Labels {
-				if *v.Name != opts.Label {
-					newLabels = append(newLabels, *v.Name)
-				}
-			}
+			newLabels = issue.RemoveLabel(opts.Label)
 		case AddAction:
-			seen := false
-			for _, v := range issue.Labels {
-				if *v.Name == opts.Label {
-					seen = true
-				}
-				newLabels = append(newLabels, *v.Name)
-			}
-			if !seen {
-				newLabels = append(newLabels, opts.Label)
-			}
+			newLabels = issue.AddLabel(opts.Label)
 		}
 		if err := client.UpdateLabels(ctx, opts.IssueSelector.Repo, *issue.Number, newLabels); err != nil {
 			return err

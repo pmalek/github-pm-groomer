@@ -10,9 +10,9 @@ import (
 
 var (
 	labelsCmd = &cobra.Command{
-		Use: "labels",
+		Use:   "labels",
 		Short: "do things to labels",
-		Long: "Add or Remove labels, the will also apply to PRs",
+		Long:  "Add or Remove labels, the will also apply to PRs",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := labelOpts.Validate(); err != nil {
 				return err
@@ -24,8 +24,8 @@ var (
 )
 
 func init() {
-	labelsCmd.Flags().StringVarP(&labelOpts.Action, "action","a", "add", fmt.Sprintf("what to do on the issues (%s)", strings.Join(labels.AllOptions, ",")))
-	labelsCmd.Flags().StringVarP(&labelOpts.Label, "label","l", "", "The label to add/remove")
+	labelsCmd.Flags().StringVarP(&labelOpts.Action, "action", "a", "add", fmt.Sprintf("what to do on the issues (%s)", strings.Join(labels.AllOptions, ",")))
+	labelsCmd.Flags().StringVarP(&labelOpts.Label, "label", "l", "", "The label to add/remove")
 	labelsCmd.Flags().StringVar(&labelOpts.NewLabel, "new-label", "", "The new label name")
 	decorateWithIssueSelector(labelsCmd, &labelOpts.IssueSelector)
 

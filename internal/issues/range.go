@@ -55,9 +55,8 @@ func (l Selector) Iterator(ctx context.Context, client api.Client, now time.Time
 				return nil, err
 			}
 			issue, err = client.GetIssue(ctx, l.Repo, num)
-			i+=1
+			i += 1
 			return issue, err
-
 
 		})
 	} else {

@@ -9,11 +9,11 @@ import (
 )
 
 type Opts struct {
-	StaleDuration time.Duration
-	StaleLabel string
+	StaleDuration  time.Duration
+	StaleLabel     string
 	RottenDuration time.Duration
-	RottenLabel string
-	IssueSelector issues.Selector
+	RottenLabel    string
+	IssueSelector  issues.Selector
 }
 
 func (o Opts) Validate() error {
@@ -22,7 +22,6 @@ func (o Opts) Validate() error {
 	}
 	return nil
 }
-
 
 func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error {
 	iterator := opts.IssueSelector.Iterator(ctx, client, now)

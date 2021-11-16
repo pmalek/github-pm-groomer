@@ -13,8 +13,8 @@ import (
 type Action string
 
 const (
-	AddAction    = "add"
-	RemoveAction = "remove"
+	AddAction     = "add"
+	RemoveAction  = "remove"
 	ReplaceAction = "replace"
 )
 
@@ -23,7 +23,7 @@ var AllOptions = []string{AddAction, RemoveAction, ReplaceAction}
 type Opts struct {
 	Action        string
 	Label         string
-	NewLabel         string
+	NewLabel      string
 	IssueSelector issues.Selector
 }
 

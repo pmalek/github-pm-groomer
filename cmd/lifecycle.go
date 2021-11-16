@@ -8,9 +8,9 @@ import (
 
 var (
 	lifecycleCmd = &cobra.Command{
-		Use: "lifecycle",
+		Use:   "lifecycle",
 		Short: "Mark issue as stale if they have been used for some time or rotten or close them.",
-		Long: "Mark issue as stale if they have been used for some time or rotten or close them.",
+		Long:  "Mark issue as stale if they have been used for some time or rotten or close them.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := lifeCycleOpts.Validate(); err != nil {
 				return err

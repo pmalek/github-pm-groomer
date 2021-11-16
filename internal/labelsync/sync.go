@@ -26,10 +26,10 @@ type RepoConf struct {
 }
 
 type LabelDef struct {
-	Color       string     `yaml:"color"`
-	Name        string     `yaml:"name"`
-	Description string     `yaml:"description"`
-	Delete      bool       `yaml:"delete"`
+	Color       string `yaml:"color"`
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+	Delete      bool   `yaml:"delete"`
 }
 
 func (o Opts) Validate() error {

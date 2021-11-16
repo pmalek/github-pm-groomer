@@ -51,8 +51,8 @@ func (gc *githubClient) Ping(ctx context.Context) error {
 
 type IssueListOptions struct {
 	Labels string
-	State string
-	Since time.Time
+	State  string
+	Since  time.Time
 }
 
 func (gc *githubClient) UpdateLabels(ctx context.Context, orgRepo string, issue int, labels []string) error {
@@ -75,8 +75,8 @@ func (gc *githubClient) GetIssues(ctx context.Context, orgRepo string, options I
 	org, repo := utils.MustOrgRepo(orgRepo)
 	issues, _, err := gc.client.Issues.ListByRepo(ctx, org, repo, &github.IssueListByRepoOptions{
 		Labels: strings.Split(options.Labels, ","),
-		Since: options.Since,
-		State: options.State,
+		Since:  options.Since,
+		State:  options.State,
 		ListOptions: github.ListOptions{
 			Page:    page,
 			PerPage: IssuesPerPage,
@@ -111,7 +111,7 @@ type Label github.Label
 func (gc *githubClient) ListLabels(ctx context.Context, orgRepo string) ([]*Label, error) {
 	org, repo := utils.MustOrgRepo(orgRepo)
 	var allLabels []*Label
-	for i := 0; ;i++ {
+	for i := 0; ; i++ {
 		labels, _, err := gc.client.Issues.ListLabels(ctx, org, repo, &github.ListOptions{PerPage: 100, Page: i})
 		if err != nil {
 			return nil, err

@@ -26,6 +26,7 @@ var (
 func init() {
 	labelsCmd.Flags().StringVarP(&labelOpts.Action, "action","a", "add", fmt.Sprintf("what to do on the issues (%s)", strings.Join(labels.AllOptions, ",")))
 	labelsCmd.Flags().StringVarP(&labelOpts.Label, "label","l", "", "The label to add/remove")
+	labelsCmd.Flags().StringVar(&labelOpts.NewLabel, "new-label", "", "The new label name")
 	decorateWithIssueSelector(labelsCmd, &labelOpts.IssueSelector)
 
 	rootCmd.AddCommand(labelsCmd)

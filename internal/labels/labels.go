@@ -15,19 +15,24 @@ type Action string
 const (
 	AddAction    = "add"
 	RemoveAction = "remove"
+	ReplaceAction = "replace"
 )
 
-var AllOptions = []string{AddAction, RemoveAction}
+var AllOptions = []string{AddAction, RemoveAction, ReplaceAction}
 
 type Opts struct {
 	Action        string
 	Label         string
+	NewLabel         string
 	IssueSelector issues.Selector
 }
 
 func (l Opts) Validate() error {
-	if l.Action != AddAction && l.Action != RemoveAction {
+	if l.Action != AddAction && l.Action != RemoveAction && l.Action != ReplaceAction {
 		return fmt.Errorf("invalid action type '%s' valid options: %s", l.Action, strings.Join(AllOptions, ","))
+	}
+	if l.Action == ReplaceAction && l.NewLabel == "" {
+		return errors.New("when using replace you must set a new label")
 	}
 	if l.Label == "" {
 		return errors.New("must set a label to act on")
@@ -58,6 +63,9 @@ func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error
 			newLabels = issue.RemoveLabel(opts.Label)
 		case AddAction:
 			newLabels = issue.AddLabel(opts.Label)
+		case ReplaceAction:
+			newLabels = issue.ReplaceLabel(opts.Label, opts.NewLabel)
+
 		}
 		if err := client.UpdateLabels(ctx, opts.IssueSelector.Repo, *issue.Number, newLabels); err != nil {
 			return err

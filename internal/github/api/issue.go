@@ -23,6 +23,18 @@ func (i *Issue) RemoveLabel(label string) []string {
 	return newLabels
 }
 
+func (i *Issue) ReplaceLabel(label string, newLabel string) []string {
+	var newLabels []string
+	for _, v := range i.Labels {
+		if *v.Name == label {
+			newLabels = append(newLabels, newLabel)
+		} else {
+			newLabels = append(newLabels, *v.Name)
+		}
+	}
+	return newLabels
+}
+
 func (i *Issue) AddLabel(label string) []string {
 	seen := false
 	var newLabels []string

@@ -18,6 +18,10 @@ type Client interface {
 	UpdateIssueState(ctx context.Context, orgRepo string, issue int, state string) error
 	Ping(ctx context.Context) error
 	Comment(ctx context.Context, repo string, issueNumber int, message string) error
+	ListLabels(ctx context.Context, orgRepo string) ([]*Label, error)
+	UpdateLabel(ctx context.Context, orgRepo string, originalName string, label *Label) error
+	DeleteLabel(ctx context.Context, orgRepo string, name string) error
+	CreateLabel(ctx context.Context, repo string, label *Label) error
 }
 
 type githubClient struct {
@@ -65,7 +69,6 @@ func (gc *githubClient) UpdateIssueState(ctx context.Context, orgRepo string, is
 	org, repo := utils.MustOrgRepo(orgRepo)
 	_, _, err := gc.client.Issues.Edit(ctx, org, repo, issue, &github.IssueRequest{State: &state})
 	return err
-
 }
 
 func (gc *githubClient) GetIssues(ctx context.Context, orgRepo string, options IssueListOptions, page int) ([]*Issue, error) {
@@ -100,5 +103,42 @@ func (gc *githubClient) Comment(ctx context.Context, orgRepo string, issueNumber
 	_, _, err := gc.client.Issues.CreateComment(ctx, org, repo, issueNumber, &github.IssueComment{
 		Body: &message,
 	})
+	return err
+}
+
+type Label github.Label
+
+func (gc *githubClient) ListLabels(ctx context.Context, orgRepo string) ([]*Label, error) {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	var allLabels []*Label
+	for i := 0; ;i++ {
+		labels, _, err := gc.client.Issues.ListLabels(ctx, org, repo, &github.ListOptions{PerPage: 100, Page: i})
+		if err != nil {
+			return nil, err
+		}
+		for _, l := range labels {
+			allLabels = append(allLabels, (*Label)(l))
+		}
+		if len(labels) < 100 {
+			return allLabels, nil
+		}
+	}
+}
+
+func (gc *githubClient) UpdateLabel(ctx context.Context, orgRepo string, originalName string, label *Label) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, _, err := gc.client.Issues.EditLabel(ctx, org, repo, originalName, (*github.Label)(label))
+	return err
+}
+
+func (gc *githubClient) DeleteLabel(ctx context.Context, orgRepo string, name string) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, err := gc.client.Issues.DeleteLabel(ctx, org, repo, name)
+	return err
+}
+
+func (gc *githubClient) CreateLabel(ctx context.Context, orgRepo string, label *Label) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, _, err := gc.client.Issues.CreateLabel(ctx, org, repo, (*github.Label)(label))
 	return err
 }

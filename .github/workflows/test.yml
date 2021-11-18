@@ -1,0 +1,16 @@
+on:
+  issues:
+    types:
+      - reopened
+      - opened
+      - labeled
+  workflow_dispatch:
+  schedule:
+    - cron: 0 8 * * *
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo ${{ fromJson(github.event) }}

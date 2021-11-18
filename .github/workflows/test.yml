@@ -6,7 +6,7 @@ on:
       - labeled
   workflow_dispatch:
   schedule:
-    - cron: 20 * * * *
+    - cron: 30 * * * *
 
 jobs:
   test:

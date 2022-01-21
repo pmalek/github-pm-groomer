@@ -9,6 +9,13 @@ on:
     - cron: 30 * * * *
 
 jobs:
+  assign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/workflows/rolling-issue-assignment.yaml@master
+        with:
+          issue: 4
+          users: lahabana,guillaumemolter
   test:
     runs-on: ubuntu-latest
     steps:

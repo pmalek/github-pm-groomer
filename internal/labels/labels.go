@@ -44,9 +44,9 @@ func (l Opts) Validate() error {
 }
 
 func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error {
-	if opts.Action == RemoveAction {
+	if opts.Action == RemoveAction || opts.Action == ReplaceAction {
 		// We're removing so let's only select issues with the label in the first place
-		strings.Join(append(strings.Split(opts.IssueSelector.Labels, ","), opts.Label), ",")
+		opts.IssueSelector.Labels = strings.Join(append(strings.Split(opts.IssueSelector.Labels, ","), opts.Label), ",")
 	}
 	iterator := opts.IssueSelector.Iterator(ctx, client, now)
 	for {

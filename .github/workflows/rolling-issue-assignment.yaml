@@ -15,25 +15,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v5
-        run: |
-          const baseReq = {
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: ${{ inputs.issue }}
-          };
-          const issue = await github.rest.issues.get(baseReq)
-          const candidates ="${{ inputs.users }}".split(",");
-          let newAssignee = "";
-          if (issue.assignees.length === 0) {
-            newAssignee = candidates[0];
-          } else {
-            const curAssignee = issue.assignees[0].login;
-            await github.rest.issues.removeAssignees({...baseReq, assignees: [curAssignee]});
-            for (let i = 0; i < candidates.length; i++) {
-              if (candidates[i] === curAssignee) {
-                newAssignee = candidates[(i + 1) % candidates.length];
-                break
+        with:
+          script: |
+            const baseReq = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ inputs.issue }}
+            };
+            const issue = await github.rest.issues.get(baseReq)
+            const candidates ="${{ inputs.users }}".split(",");
+            let newAssignee = "";
+            if (issue.assignees.length === 0) {
+              newAssignee = candidates[0];
+            } else {
+              const curAssignee = issue.assignees[0].login;
+              await github.rest.issues.removeAssignees({...baseReq, assignees: [curAssignee]});
+              for (let i = 0; i < candidates.length; i++) {
+                if (candidates[i] === curAssignee) {
+                  newAssignee = candidates[(i + 1) % candidates.length];
+                  break
+                }
               }
             }
-          }
-          await github.rest.issues.addAssignees({...baseReq, assignees: [newAssignee]});
+            await github.rest.issues.addAssignees({...baseReq, assignees: [newAssignee]});

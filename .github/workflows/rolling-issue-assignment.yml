@@ -25,8 +25,8 @@ jobs:
             const issue = await github.rest.issues.get(baseReq);
             const candidates ="${{ inputs.users }}".split(",");
             let newAssignee = "";
-            console.log(issue.assignees);
-            if (issue.assignees.length === 0) {
+            console.log(issue);
+            if (!issue || issue.assignees.length === 0) {
               newAssignee = candidates[0];
             } else {
               const curAssignee = issue.assignees[0].login;

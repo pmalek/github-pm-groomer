@@ -10,7 +10,7 @@ on:
 
 jobs:
   assign:
-    uses: ./.github/workflows/rolling-issue-assignment.yml@master
+    uses: lahabana/github-pm-groomer/.github/workflows/rolling-issue-assignment.yml@master
     with:
       issue: 4
       users: lahabana,guillaumemolter

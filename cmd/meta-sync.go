@@ -1,0 +1,29 @@
+package cmd
+
+import (
+	"github.com/lahabana/github-pm-groomer/internal/metasync"
+	"github.com/spf13/cobra"
+	"time"
+)
+
+var (
+	metaSyncCmd = &cobra.Command{
+		Use:     "meta-sync",
+		Aliases: []string{"label-sync"},
+		Short:   "do things to repo metadata",
+		Long:    "Inspired by https://github.com/kubernetes/test-infra/tree/master/label_sync but with less options",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := metaSyncOpts.Validate(); err != nil {
+				return err
+			}
+			return metasync.Run(cmd.Context(), ghClient, metaSyncOpts, time.Now())
+		},
+	}
+	metaSyncOpts metasync.Opts
+)
+
+func init() {
+	metaSyncCmd.Flags().StringVarP(&metaSyncOpts.Repo, "repo", "r", "", "The repo to use")
+	metaSyncCmd.Flags().StringVarP(&metaSyncOpts.FilePath, "path", "p", "", "The path or url to the labels to sync")
+	rootCmd.AddCommand(metaSyncCmd)
+}

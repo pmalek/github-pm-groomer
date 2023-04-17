@@ -1,4 +1,4 @@
-package labelsync
+package metasync
 
 import (
 	"context"
@@ -21,7 +21,16 @@ type Conf struct {
 	Default RepoConf `yaml:"default"`
 }
 type RepoConf struct {
-	Labels []LabelDef `yamls:"labels"`
+	Labels     []LabelDef     `yaml:"labels"`
+	Milestones []MilestoneDef `yaml:"milestones"`
+}
+
+type MilestoneDef struct {
+	Title       string    `yaml:"title"`
+	Closed      bool      `yaml:"closed"`
+	DueDate     time.Time `yaml:"dueDate"`
+	Description string    `yaml:"description"`
+	Delete      bool      `yaml:"delete"`
 }
 
 type LabelDef struct {
@@ -44,7 +53,12 @@ func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error
 	if err != nil {
 		return err
 	}
-	return syncLabels(ctx, client, opts.Repo, labelConf)
+
+	err = syncLabels(ctx, client, opts.Repo, labelConf)
+	if err != nil {
+		return err
+	}
+	return syncMilestones(ctx, client, opts.Repo, labelConf)
 }
 
 func syncLabels(ctx context.Context, client api.Client, repo string, labelConf Conf) error {
@@ -77,6 +91,46 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 					}
 				}
 
+			}
+		}
+	}
+
+	return nil
+}
+
+func syncMilestones(ctx context.Context, client api.Client, repo string, labelConf Conf) error {
+	milestones, err := client.ListMilestones(ctx, repo)
+	if err != nil {
+		return err
+	}
+	byTitle := map[string]*api.Milestone{}
+	for _, l := range milestones {
+		byTitle[*l.Title] = l
+	}
+	for _, def := range labelConf.Default.Milestones {
+		cur := byTitle[def.Title]
+		if def.Delete {
+			if cur != nil {
+				if err := client.DeleteMilestone(ctx, repo, *cur.Number); err != nil {
+					return err
+				}
+			}
+		} else {
+			c := "open"
+			if def.Closed {
+				c = "closed"
+			}
+			milestone := &api.Milestone{Title: &def.Title, Description: &def.Description, State: &c}
+			if cur == nil {
+				if err := client.CreateMilestone(ctx, repo, milestone); err != nil {
+					return err
+				}
+			} else {
+				if cur.State != milestone.State || cur.Description != milestone.Description {
+					if err := client.UpdateMilestone(ctx, repo, *cur.Number, milestone); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

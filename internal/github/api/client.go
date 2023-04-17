@@ -22,6 +22,10 @@ type Client interface {
 	UpdateLabel(ctx context.Context, orgRepo string, originalName string, label *Label) error
 	DeleteLabel(ctx context.Context, orgRepo string, name string) error
 	CreateLabel(ctx context.Context, repo string, label *Label) error
+	ListMilestones(ctx context.Context, orgRepo string) ([]*Milestone, error)
+	UpdateMilestone(ctx context.Context, orgRepo string, number int, milestone *Milestone) error
+	DeleteMilestone(ctx context.Context, orgRepo string, number int) error
+	CreateMilestone(ctx context.Context, repo string, milestone *Milestone) error
 }
 
 type githubClient struct {
@@ -140,5 +144,42 @@ func (gc *githubClient) DeleteLabel(ctx context.Context, orgRepo string, name st
 func (gc *githubClient) CreateLabel(ctx context.Context, orgRepo string, label *Label) error {
 	org, repo := utils.MustOrgRepo(orgRepo)
 	_, _, err := gc.client.Issues.CreateLabel(ctx, org, repo, (*github.Label)(label))
+	return err
+}
+
+type Milestone github.Milestone
+
+func (gc *githubClient) ListMilestones(ctx context.Context, orgRepo string) ([]*Milestone, error) {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	var allMilestones []*Milestone
+	for i := 0; ; i++ {
+		milestones, _, err := gc.client.Issues.ListMilestones(ctx, org, repo, &github.MilestoneListOptions{State: "all", ListOptions: github.ListOptions{PerPage: 100, Page: i}})
+		if err != nil {
+			return nil, err
+		}
+		for _, l := range milestones {
+			allMilestones = append(allMilestones, (*Milestone)(l))
+		}
+		if len(milestones) < 100 {
+			return allMilestones, nil
+		}
+	}
+}
+
+func (gc *githubClient) UpdateMilestone(ctx context.Context, orgRepo string, number int, milestone *Milestone) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, _, err := gc.client.Issues.EditMilestone(ctx, org, repo, number, (*github.Milestone)(milestone))
+	return err
+}
+
+func (gc *githubClient) DeleteMilestone(ctx context.Context, orgRepo string, number int) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, err := gc.client.Issues.DeleteMilestone(ctx, org, repo, number)
+	return err
+}
+
+func (gc *githubClient) CreateMilestone(ctx context.Context, orgRepo string, milestone *Milestone) error {
+	org, repo := utils.MustOrgRepo(orgRepo)
+	_, _, err := gc.client.Issues.CreateMilestone(ctx, org, repo, (*github.Milestone)(milestone))
 	return err
 }

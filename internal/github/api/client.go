@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofri/go-github-ratelimit/github_ratelimit"
 	"github.com/google/go-github/v67/github"
 	"github.com/lahabana/github-pm-groomer/internal/utils"
 	"golang.org/x/oauth2"
@@ -34,7 +35,13 @@ type githubClient struct {
 }
 
 func New(token string) Client {
-	client := github.NewClient(nil)
+	// https://github.com/google/go-github?tab=readme-ov-file#rate-limiting
+	rateLimiter, err := github_ratelimit.NewRateLimitWaiterClient(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	client := github.NewClient(rateLimiter)
 	if token != "" {
 		ctx := context.Background()
 		ts := oauth2.StaticTokenSource(

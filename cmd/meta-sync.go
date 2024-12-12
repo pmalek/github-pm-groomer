@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/lahabana/github-pm-groomer/internal/metasync"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 var (
@@ -23,7 +24,6 @@ var (
 )
 
 func init() {
-	metaSyncCmd.Flags().StringVarP(&metaSyncOpts.Repo, "repo", "r", "", "The repo to use")
 	metaSyncCmd.Flags().StringVarP(&metaSyncOpts.FilePath, "path", "p", "", "The path or url to the labels to sync")
 	rootCmd.AddCommand(metaSyncCmd)
 }

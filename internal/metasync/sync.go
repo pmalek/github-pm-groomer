@@ -4,25 +4,31 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/google/go-github/v67/github"
 	"github.com/lahabana/github-pm-groomer/internal/github/api"
 	"github.com/lahabana/github-pm-groomer/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 
 type Opts struct {
-	Repo     string
 	FilePath string
 }
 
-type Conf struct {
-	Default RepoConf `yaml:"default"`
+type ConfRoot struct {
+	Repos  []string `yaml:"repos"`
+	Config Conf     `yaml:"config"`
 }
-type RepoConf struct {
+
+type Conf struct {
 	Labels     []LabelDef     `yaml:"labels"`
 	Milestones []MilestoneDef `yaml:"milestones"`
 }
@@ -43,7 +49,7 @@ type LabelDef struct {
 }
 
 func (o Opts) Validate() error {
-	if _, _, err := utils.OrgRepo(o.Repo); err != nil {
+	if _, err := os.Stat(o.FilePath); err != nil {
 		return err
 	}
 
@@ -51,19 +57,42 @@ func (o Opts) Validate() error {
 }
 
 func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error {
-	labelConf, err := parseConf(opts.FilePath)
+	conf, err := parseConf(opts.FilePath)
 	if err != nil {
 		return err
 	}
 
-	err = syncLabels(ctx, client, opts.Repo, labelConf)
-	if err != nil {
+	// Check if each repo is valid.
+	for _, repo := range conf.Repos {
+		if _, _, err := utils.OrgRepo(repo); err != nil {
+			return err
+		}
+	}
+
+	errGroup := errgroup.Group{}
+	for _, repo := range conf.Repos {
+		errGroup.Go(func() error {
+			return syncLabels(ctx, client, repo, conf)
+		})
+	}
+	if err := errGroup.Wait(); err != nil {
 		return err
 	}
-	return syncMilestones(ctx, client, opts.Repo, labelConf)
+
+	errGroup = errgroup.Group{}
+	for _, repo := range conf.Repos {
+		errGroup.Go(func() error {
+			return syncMilestones(ctx, client, repo, conf)
+		})
+	}
+	if err := errGroup.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func syncLabels(ctx context.Context, client api.Client, repo string, labelConf Conf) error {
+func syncLabels(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
 	labels, err := client.ListLabels(ctx, repo)
 	if err != nil {
 		return err
@@ -72,34 +101,51 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 	for _, l := range labels {
 		byName[*l.Name] = l
 	}
-	for _, def := range labelConf.Default.Labels {
-		cur := byName[def.Name]
-		if def.Delete {
-			if cur != nil {
-				if err := client.DeleteLabel(ctx, repo, def.Name); err != nil {
-					return err
+	errGroup := errgroup.Group{}
+	for _, def := range labelConf.Config.Labels {
+		errGroup.Go(func() error {
+			retry.Do(func() error {
+				cur := byName[def.Name]
+
+				if def.Delete {
+					if cur != nil {
+						if err := client.DeleteLabel(ctx, repo, def.Name); err != nil {
+							return err
+						}
+					}
+					return nil
 				}
-			}
-		} else {
-			label := &api.Label{Color: &def.Color, Name: &def.Name, Description: &def.Description}
-			if cur == nil {
-				if err := client.CreateLabel(ctx, repo, label); err != nil {
-					return err
+
+				label := &api.Label{Color: &def.Color, Name: &def.Name, Description: &def.Description}
+				if cur == nil {
+					if err := client.CreateLabel(ctx, repo, label); err != nil {
+						return err
+					}
+					return nil
 				}
-			} else {
+
 				if cur.Color != label.Color || cur.Description != label.Description {
 					if err := client.UpdateLabel(ctx, repo, *cur.Name, label); err != nil {
 						return err
 					}
 				}
-			}
-		}
+
+				return nil
+			},
+				retry.Context(ctx),
+				retry.OnRetry(retryOnRateLimit(ctx)),
+			)
+			return nil
+		})
+	}
+	if err := errGroup.Wait(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func syncMilestones(ctx context.Context, client api.Client, repo string, labelConf Conf) error {
+func syncMilestones(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
 	milestones, err := client.ListMilestones(ctx, repo)
 	if err != nil {
 		return err
@@ -108,39 +154,70 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 	for _, l := range milestones {
 		byTitle[*l.Title] = l
 	}
-	for _, def := range labelConf.Default.Milestones {
-		cur := byTitle[def.Title]
-		if def.Delete {
-			if cur != nil {
-				if err := client.DeleteMilestone(ctx, repo, *cur.Number); err != nil {
-					return err
+	errGroup := errgroup.Group{}
+	for _, def := range labelConf.Config.Milestones {
+		errGroup.Go(func() error {
+			retry.Do(func() error {
+				cur := byTitle[def.Title]
+				if def.Delete {
+					if cur != nil {
+						if err := client.DeleteMilestone(ctx, repo, *cur.Number); err != nil {
+							return err
+						}
+					}
+					return nil
 				}
-			}
-		} else {
-			c := "open"
-			if def.Closed {
-				c = "closed"
-			}
-			milestone := &api.Milestone{Title: &def.Title, Description: &def.Description, State: &c}
-			if cur == nil {
-				if err := client.CreateMilestone(ctx, repo, milestone); err != nil {
-					return err
+
+				c := "open"
+				if def.Closed {
+					c = "closed"
 				}
-			} else {
+				milestone := &api.Milestone{Title: &def.Title, Description: &def.Description, State: &c}
+				if cur == nil {
+					if err := client.CreateMilestone(ctx, repo, milestone); err != nil {
+						return err
+					}
+					return nil
+				}
+
 				if cur.State != milestone.State || cur.Description != milestone.Description {
 					if err := client.UpdateMilestone(ctx, repo, *cur.Number, milestone); err != nil {
 						return err
 					}
 				}
-			}
-		}
+
+				return nil
+			},
+				retry.Context(ctx),
+				retry.OnRetry(retryOnRateLimit(ctx)),
+			)
+			return nil
+		})
+	}
+	if err := errGroup.Wait(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func parseConf(path string) (Conf, error) {
-	out := Conf{}
+func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
+	return func(n uint, err error) {
+		if errRL, ok := err.(*github.RateLimitError); ok {
+			log.Println("hit rate limit")
+			timer := time.NewTimer(time.Until(errRL.Rate.Reset.Time))
+			defer timer.Stop()
+			select {
+			case <-timer.C:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}
+}
+
+func parseConf(path string) (ConfRoot, error) {
+	out := ConfRoot{}
 	var b []byte
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		r, err := http.Get(path)

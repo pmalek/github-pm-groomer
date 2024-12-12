@@ -1,6 +1,6 @@
 package api
 
-import "github.com/google/go-github/v40/github"
+import "github.com/google/go-github/v67/github"
 
 type Issue github.Issue
 

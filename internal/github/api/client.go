@@ -2,11 +2,12 @@ package api
 
 import (
 	"context"
-	"github.com/google/go-github/v40/github"
-	"github.com/lahabana/github-pm-groomer/internal/utils"
-	"golang.org/x/oauth2"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v67/github"
+	"github.com/lahabana/github-pm-groomer/internal/utils"
+	"golang.org/x/oauth2"
 )
 
 const IssuesPerPage = 100

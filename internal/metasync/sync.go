@@ -3,13 +3,15 @@ package metasync
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/lahabana/github-pm-groomer/internal/github/api"
 	"github.com/lahabana/github-pm-groomer/internal/utils"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type Opts struct {
@@ -90,7 +92,6 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 						return err
 					}
 				}
-
 			}
 		}
 	}
@@ -149,13 +150,13 @@ func parseConf(path string) (Conf, error) {
 		if r.StatusCode != 200 {
 			return out, fmt.Errorf("invalid status code: %d", r.StatusCode)
 		}
-		b, err = ioutil.ReadAll(r.Body)
+		b, err = io.ReadAll(r.Body)
 		if err != nil {
 			return out, err
 		}
 	} else {
 		var err error
-		b, err = ioutil.ReadFile(path)
+		b, err = os.ReadFile(path)
 		if err != nil {
 			return out, err
 		}

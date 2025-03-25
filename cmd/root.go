@@ -16,10 +16,10 @@ var (
 	ghClient api.Client
 )
 
-func Execute() error {
+func Execute(ctx context.Context) error {
 	ghClient = api.New(os.Getenv("GITHUB_API_TOKEN"))
-	if err := ghClient.Ping(context.Background()); err != nil {
+	if err := ghClient.Ping(ctx); err != nil {
 		return err
 	}
-	return rootCmd.Execute()
+	return rootCmd.ExecuteContext(ctx)
 }

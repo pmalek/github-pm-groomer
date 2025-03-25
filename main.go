@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -8,7 +9,8 @@ import (
 )
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	ctx := context.Background()
+	if err := cmd.Execute(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

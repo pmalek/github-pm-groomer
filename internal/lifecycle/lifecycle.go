@@ -3,9 +3,10 @@ package lifecycle
 import (
 	"context"
 	"fmt"
-	"github.com/lahabana/github-pm-groomer/internal/github/api"
-	"github.com/lahabana/github-pm-groomer/internal/issues"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/github/api"
+	"github.com/pmalek/github-pm-groomer/internal/issues"
 )
 
 type Opts struct {
@@ -44,7 +45,6 @@ func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error
 					return err
 				}
 			}
-
 		} else if !n.HasLabel(opts.StaleLabel) {
 			if n.UpdatedAt != nil && n.UpdatedAt.Add(opts.StaleDuration).Before(now) {
 				err = client.Comment(ctx, opts.IssueSelector.Repo, *n.Number,

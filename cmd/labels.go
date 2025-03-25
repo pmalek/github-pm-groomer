@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/lahabana/github-pm-groomer/internal/labels"
-	"github.com/spf13/cobra"
 	"strings"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/labels"
+	"github.com/spf13/cobra"
 )
 
 var (

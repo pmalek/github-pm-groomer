@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/lahabana/github-pm-groomer/internal/issues"
-	"github.com/spf13/cobra"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/issues"
+	"github.com/spf13/cobra"
 )
 
 func decorateWithIssueSelector(cmd *cobra.Command, selector *issues.Selector) {

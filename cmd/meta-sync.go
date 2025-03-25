@@ -3,7 +3,7 @@ package cmd
 import (
 	"time"
 
-	"github.com/lahabana/github-pm-groomer/internal/metasync"
+	"github.com/pmalek/github-pm-groomer/internal/metasync"
 	"github.com/spf13/cobra"
 )
 

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/lahabana/github-pm-groomer/internal/github/api"
-	"github.com/lahabana/github-pm-groomer/internal/issues"
 	"strings"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/github/api"
+	"github.com/pmalek/github-pm-groomer/internal/issues"
 )
 
 type Action string

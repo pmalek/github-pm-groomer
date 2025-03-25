@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/lahabana/github-pm-groomer/cmd"
 	"os"
+
+	"github.com/pmalek/github-pm-groomer/cmd"
 )
 
 func main() {

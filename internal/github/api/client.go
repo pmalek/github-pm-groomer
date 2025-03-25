@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofri/go-github-ratelimit/github_ratelimit"
 	"github.com/google/go-github/v67/github"
-	"github.com/lahabana/github-pm-groomer/internal/utils"
+	"github.com/pmalek/github-pm-groomer/internal/utils"
 	"golang.org/x/oauth2"
 )
 

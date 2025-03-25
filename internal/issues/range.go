@@ -2,11 +2,12 @@ package issues
 
 import (
 	"context"
-	"github.com/lahabana/github-pm-groomer/internal/github/api"
-	"github.com/lahabana/github-pm-groomer/internal/utils"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/github/api"
+	"github.com/pmalek/github-pm-groomer/internal/utils"
 )
 
 type Selector struct {
@@ -57,7 +58,6 @@ func (l Selector) Iterator(ctx context.Context, client api.Client, now time.Time
 			issue, err = client.GetIssue(ctx, l.Repo, num)
 			i += 1
 			return issue, err
-
 		})
 	} else {
 		opts := l.listOpts(now)
@@ -92,7 +92,6 @@ func (l Selector) Iterator(ctx context.Context, client api.Client, now time.Time
 			return itm, nil
 		})
 	}
-
 }
 
 type SelectorIterator interface {

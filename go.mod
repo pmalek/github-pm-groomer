@@ -1,4 +1,4 @@
-module github.com/lahabana/github-pm-groomer
+module github.com/pmalek/github-pm-groomer
 
 go 1.23
 
@@ -10,6 +10,8 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+require github.com/stretchr/testify v1.10.0 // indirect
 
 require (
 	github.com/avast/retry-go v3.0.0+incompatible

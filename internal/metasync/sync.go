@@ -14,8 +14,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-github/v67/github"
-	"github.com/lahabana/github-pm-groomer/internal/github/api"
-	"github.com/lahabana/github-pm-groomer/internal/utils"
+	"github.com/pmalek/github-pm-groomer/internal/github/api"
+	"github.com/pmalek/github-pm-groomer/internal/utils"
 	"gopkg.in/yaml.v3"
 )
 

@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"context"
-	"github.com/lahabana/github-pm-groomer/internal/github/api"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/pmalek/github-pm-groomer/internal/github/api"
+	"github.com/spf13/cobra"
 )
 
 var (

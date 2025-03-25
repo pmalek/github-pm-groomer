@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/lahabana/github-pm-groomer/internal/lifecycle"
-	"github.com/spf13/cobra"
 	"time"
+
+	"github.com/pmalek/github-pm-groomer/internal/lifecycle"
+	"github.com/spf13/cobra"
 )
 
 var (

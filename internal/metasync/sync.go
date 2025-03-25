@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -112,6 +112,9 @@ func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error
 }
 
 func syncLabels(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
+	logger := slog.With(slog.String("repo", repo))
+	logger.LogAttrs(ctx, slog.LevelInfo, "sync labels")
+
 	labels, err := client.ListLabels(ctx, repo)
 	if err != nil {
 		return err
@@ -124,10 +127,12 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 	for _, def := range labelConf.Config.Labels {
 		errGroup.Go(func() error {
 			retry.Do(func() error {
+				logger := logger.With(slog.String("label", def.Name))
 				cur := byName[def.Name]
 
 				if def.Delete {
 					if cur != nil {
+						logger.LogAttrs(ctx, slog.LevelInfo, "deleting label")
 						if err := client.DeleteLabel(ctx, repo, def.Name); err != nil {
 							return err
 						}
@@ -137,6 +142,7 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 
 				label := &api.Label{Color: &def.Color, Name: &def.Name, Description: &def.Description}
 				if cur == nil {
+					logger.LogAttrs(ctx, slog.LevelInfo, "creating label")
 					if err := client.CreateLabel(ctx, repo, label); err != nil {
 						return err
 					}
@@ -144,6 +150,7 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 				}
 
 				if cur.Color != label.Color || cur.Description != label.Description {
+					logger.LogAttrs(ctx, slog.LevelInfo, "updating label")
 					if err := client.UpdateLabel(ctx, repo, *cur.Name, label); err != nil {
 						return err
 					}
@@ -165,6 +172,9 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 }
 
 func syncMilestones(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
+	logger := slog.With(slog.String("repo", repo))
+	logger.LogAttrs(ctx, slog.LevelInfo, "sync milestones")
+
 	milestones, err := client.ListMilestones(ctx, repo)
 	if err != nil {
 		return err
@@ -177,9 +187,11 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 	for _, def := range labelConf.Config.Milestones {
 		errGroup.Go(func() error {
 			retry.Do(func() error {
+				logger := logger.With(slog.String("milestone", def.Title))
 				cur := byTitle[def.Title]
 				if def.Delete {
 					if cur != nil {
+						logger.LogAttrs(ctx, slog.LevelInfo, "deleting milestone")
 						if err := client.DeleteMilestone(ctx, repo, *cur.Number); err != nil {
 							return err
 						}
@@ -200,6 +212,7 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 					milestone.DueOn = &github.Timestamp{Time: def.DueDate.Time}
 				}
 				if cur == nil {
+					logger.LogAttrs(ctx, slog.LevelInfo, "creating milestone")
 					if err := client.CreateMilestone(ctx, repo, milestone); err != nil {
 						return err
 					}
@@ -207,6 +220,7 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 				}
 
 				if cur.State != milestone.State || cur.Description != milestone.Description {
+					logger.LogAttrs(ctx, slog.LevelInfo, "updating milestone")
 					if err := client.UpdateMilestone(ctx, repo, *cur.Number, milestone); err != nil {
 						return err
 					}
@@ -230,7 +244,7 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
 	return func(n uint, err error) {
 		if errRL, ok := err.(*github.RateLimitError); ok {
-			log.Println("hit rate limit")
+			slog.Log(ctx, slog.LevelWarn, "hit rate limit")
 			timer := time.NewTimer(time.Until(errRL.Rate.Reset.Time))
 			defer timer.Stop()
 			select {

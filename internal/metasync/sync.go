@@ -33,12 +33,31 @@ type Conf struct {
 	Milestones []MilestoneDef `yaml:"milestones"`
 }
 
+type Time struct {
+	time.Time
+}
+
+func (t *Time) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err != nil {
+		return err
+	}
+	parsed, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return err
+	}
+	*t = Time{
+		Time: parsed.Add(time.Hour * 24),
+	}
+	return nil
+}
+
 type MilestoneDef struct {
-	Title       string    `yaml:"title"`
-	Closed      bool      `yaml:"closed"`
-	DueDate     time.Time `yaml:"dueDate"`
-	Description string    `yaml:"description"`
-	Delete      bool      `yaml:"delete"`
+	Title       string `yaml:"title"`
+	Closed      bool   `yaml:"closed"`
+	DueDate     Time   `yaml:"dueDate"`
+	Description string `yaml:"description"`
+	Delete      bool   `yaml:"delete"`
 }
 
 type LabelDef struct {
@@ -172,7 +191,14 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 				if def.Closed {
 					c = "closed"
 				}
-				milestone := &api.Milestone{Title: &def.Title, Description: &def.Description, State: &c}
+				milestone := &api.Milestone{
+					Title:       &def.Title,
+					Description: &def.Description,
+					State:       &c,
+				}
+				if !def.DueDate.IsZero() {
+					milestone.DueOn = &github.Timestamp{Time: def.DueDate.Time}
+				}
 				if cur == nil {
 					if err := client.CreateMilestone(ctx, repo, milestone); err != nil {
 						return err

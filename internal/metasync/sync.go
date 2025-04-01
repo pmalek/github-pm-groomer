@@ -126,7 +126,7 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 	errGroup := errgroup.Group{}
 	for _, def := range labelConf.Config.Labels {
 		errGroup.Go(func() error {
-			retry.Do(func() error {
+			return retry.Do(func() error {
 				logger := logger.With(slog.String("label", def.Name))
 				cur := byName[def.Name]
 
@@ -164,7 +164,6 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 				retry.MaxJitter(3*time.Second),
 				retry.DelayType(retry.RandomDelay),
 			)
-			return nil
 		})
 	}
 	if err := errGroup.Wait(); err != nil {

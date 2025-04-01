@@ -160,6 +160,9 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 			},
 				retry.Context(ctx),
 				retry.OnRetry(retryOnRateLimit(ctx)),
+				retry.MaxDelay(30*time.Second),
+				retry.MaxJitter(3*time.Second),
+				retry.DelayType(retry.RandomDelay),
 			)
 			return nil
 		})
@@ -251,10 +254,13 @@ func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
 
 			select {
 			case <-timer.C:
+				return
 			case <-ctx.Done():
 				return
 			}
 		}
+
+		slog.Log(ctx, slog.LevelWarn, "hit rate limit", slog.String("err", err.Error()))
 	}
 }
 

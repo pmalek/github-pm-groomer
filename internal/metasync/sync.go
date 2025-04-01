@@ -244,9 +244,11 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
 	return func(n uint, err error) {
 		if errRL, ok := err.(*github.RateLimitError); ok {
-			slog.Log(ctx, slog.LevelWarn, "hit rate limit")
-			timer := time.NewTimer(time.Until(errRL.Rate.Reset.Time))
+			resetTS := errRL.Rate.Reset.Time
+			slog.Log(ctx, slog.LevelWarn, "hit rate limit", slog.String("reset", resetTS.String()))
+			timer := time.NewTimer(time.Until(resetTS))
 			defer timer.Stop()
+
 			select {
 			case <-timer.C:
 			case <-ctx.Done():

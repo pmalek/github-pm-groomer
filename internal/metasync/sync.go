@@ -125,7 +125,7 @@ func syncLabels(
 	for _, l := range labels {
 		byName[*l.Name] = l
 	}
-	errGroup := errgroup.Group{}
+	errGroup, ctx := errgroup.WithContext(ctx)
 	for _, def := range labelConf.Config.Labels {
 		errGroup.Go(func() error {
 			return retry.Do(func() error {
@@ -168,7 +168,8 @@ func syncLabels(
 			)
 		})
 	}
-	errGroup.SetLimit(concurrency)
+	// TODO: This somehow blocks all the gorountines from returning, needs to be investigated.
+	// errGroup.SetLimit(concurrency)
 	if err := errGroup.Wait(); err != nil {
 		return err
 	}
@@ -194,7 +195,7 @@ func syncMilestones(
 	for _, l := range milestones {
 		byTitle[*l.Title] = l
 	}
-	errGroup := errgroup.Group{}
+	errGroup, ctx := errgroup.WithContext(ctx)
 	for _, def := range labelConf.Config.Milestones {
 		errGroup.Go(func() error {
 			retry.Do(func() error {
@@ -245,7 +246,8 @@ func syncMilestones(
 			return nil
 		})
 	}
-	errGroup.SetLimit(concurrency)
+	// TODO: This somehow blocks all the gorountines from returning, needs to be investigated.
+	// errGroup.SetLimit(concurrency)
 	if err := errGroup.Wait(); err != nil {
 		return err
 	}

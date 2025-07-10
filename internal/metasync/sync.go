@@ -161,7 +161,7 @@ func syncLabels(
 				return nil
 			},
 				retry.Context(ctx),
-				retry.OnRetry(retryOnRateLimit(ctx)),
+				retry.OnRetry(onRetryErrorHandler(ctx)),
 				retry.MaxDelay(30*time.Second),
 				retry.MaxJitter(3*time.Second),
 				retry.DelayType(retry.RandomDelay),
@@ -240,7 +240,7 @@ func syncMilestones(
 				return nil
 			},
 				retry.Context(ctx),
-				retry.OnRetry(retryOnRateLimit(ctx)),
+				retry.OnRetry(onRetryErrorHandler(ctx)),
 			)
 			return nil
 		})
@@ -253,11 +253,15 @@ func syncMilestones(
 	return nil
 }
 
-func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
+func onRetryErrorHandler(ctx context.Context) func(_ uint, err error) {
 	return func(n uint, err error) {
 		if errRL, ok := err.(*github.RateLimitError); ok {
 			resetTS := errRL.Rate.Reset.Time
-			slog.Log(ctx, slog.LevelWarn, "hit rate limit", slog.String("reset", resetTS.String()))
+			slog.Log(ctx, slog.LevelWarn, "hit primary rate limit",
+				slog.String("reset", resetTS.String()),
+				slog.String("remaining", fmt.Sprintf("%d", errRL.Rate.Remaining)),
+				slog.String("limit", fmt.Sprintf("%d", errRL.Rate.Limit)),
+			)
 			timer := time.NewTimer(time.Until(resetTS))
 			defer timer.Stop()
 
@@ -269,7 +273,23 @@ func retryOnRateLimit(ctx context.Context) func(_ uint, err error) {
 			}
 		}
 
-		slog.Log(ctx, slog.LevelWarn, "hit rate limit", slog.String("err", err.Error()))
+		if errAbuse, ok := err.(*github.AbuseRateLimitError); ok {
+			slog.Log(ctx, slog.LevelWarn, "hit secondary rate limit",
+				slog.String("retry_after", fmt.Sprintf("%d", *errAbuse.RetryAfter)),
+			)
+
+			timer := time.NewTimer(*errAbuse.RetryAfter)
+			defer timer.Stop()
+
+			select {
+			case <-timer.C:
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+
+		slog.Log(ctx, slog.LevelWarn, "err on request", slog.String("err", err.Error()))
 	}
 }
 

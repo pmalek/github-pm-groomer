@@ -20,7 +20,8 @@ import (
 )
 
 type Opts struct {
-	FilePath string
+	FilePath    string
+	Concurrency int
 }
 
 type ConfRoot struct {
@@ -71,6 +72,9 @@ func (o Opts) Validate() error {
 	if _, err := os.Stat(o.FilePath); err != nil {
 		return err
 	}
+	if o.Concurrency <= 0 {
+		return fmt.Errorf("concurrency must be greater than 0, got %d", o.Concurrency)
+	}
 
 	return nil
 }
@@ -88,30 +92,28 @@ func Run(ctx context.Context, client api.Client, opts Opts, now time.Time) error
 		}
 	}
 
-	errGroup := errgroup.Group{}
 	for _, repo := range conf.Repos {
-		errGroup.Go(func() error {
-			return syncLabels(ctx, client, repo, conf)
-		})
-	}
-	if err := errGroup.Wait(); err != nil {
-		return err
+		if err := syncLabels(ctx, client, repo, conf, opts.Concurrency); err != nil {
+			return err
+		}
 	}
 
-	errGroup = errgroup.Group{}
 	for _, repo := range conf.Repos {
-		errGroup.Go(func() error {
-			return syncMilestones(ctx, client, repo, conf)
-		})
-	}
-	if err := errGroup.Wait(); err != nil {
-		return err
+		if err := syncMilestones(ctx, client, repo, conf, opts.Concurrency); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func syncLabels(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
+func syncLabels(
+	ctx context.Context,
+	client api.Client,
+	repo string,
+	labelConf ConfRoot,
+	concurrency int,
+) error {
 	logger := slog.With(slog.String("repo", repo))
 	logger.LogAttrs(ctx, slog.LevelInfo, "sync labels")
 
@@ -166,6 +168,7 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 			)
 		})
 	}
+	errGroup.SetLimit(concurrency)
 	if err := errGroup.Wait(); err != nil {
 		return err
 	}
@@ -173,7 +176,13 @@ func syncLabels(ctx context.Context, client api.Client, repo string, labelConf C
 	return nil
 }
 
-func syncMilestones(ctx context.Context, client api.Client, repo string, labelConf ConfRoot) error {
+func syncMilestones(
+	ctx context.Context,
+	client api.Client,
+	repo string,
+	labelConf ConfRoot,
+	concurrency int,
+) error {
 	logger := slog.With(slog.String("repo", repo))
 	logger.LogAttrs(ctx, slog.LevelInfo, "sync milestones")
 
@@ -236,6 +245,7 @@ func syncMilestones(ctx context.Context, client api.Client, repo string, labelCo
 			return nil
 		})
 	}
+	errGroup.SetLimit(concurrency)
 	if err := errGroup.Wait(); err != nil {
 		return err
 	}

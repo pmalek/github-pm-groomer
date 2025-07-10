@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/pmalek/github-pm-groomer/internal/metasync"
@@ -25,5 +26,6 @@ var (
 
 func init() {
 	metaSyncCmd.Flags().StringVarP(&metaSyncOpts.FilePath, "path", "p", "", "The path or url to the labels to sync")
+	metaSyncCmd.Flags().IntVarP(&metaSyncOpts.Concurrency, "concurrency", "c", runtime.NumCPU(), "The number of concurrent goroutines to use for syncing metadata")
 	rootCmd.AddCommand(metaSyncCmd)
 }
